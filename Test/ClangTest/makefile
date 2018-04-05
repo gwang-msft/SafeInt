@@ -10,9 +10,12 @@ clean:
 
 SafeIntTest: ../AddVerify.cpp ../CastVerify.cpp ../DivVerify.cpp ../IncDecVerify.cpp ../ModVerify.cpp ../MultVerify.cpp ../SubVerify.cpp ../TestMain.cpp ../TestMain.h ../../SafeInt.hpp
 	clang++ --std=c++11 -O3 ../AddVerify.cpp ../CastVerify.cpp ../DivVerify.cpp ../IncDecVerify.cpp ../ModVerify.cpp ../MultVerify.cpp ../SubVerify.cpp ../TestMain.cpp -o SafeIntTest 2> SafeIntTest.err
+	((test -e SafeIntTest.err && test ! -s SafeIntTest.err) && rm SafeIntTest.err) || echo Compiled with errors
 
 CompileTest: ../CompileTest.cpp ../../SafeInt.hpp ../ConstExpr.cpp ../CleanCompile.cpp
 	clang++ -Wall --std=c++11 -O3 ../CompileTest.cpp ../ConstExpr.cpp ../CleanCompile.cpp -o CompileTest 2> CompileTest.err
+	((test -e CompileTest.err && test ! -s CompileTest.err) && rm CompileTest.err) || echo Compiled with errors
 
 CompileTest14: ../CompileTest.cpp ../../SafeInt.hpp ../ConstExpr.cpp ../CleanCompile.cpp
 	clang++ -Wall --std=c++14 -O3 ../CompileTest.cpp ../ConstExpr.cpp ../CleanCompile.cpp -o CompileTest14 2> CompileTest14.err
+	((test -e CompileTest14.err && test ! -s CompileTest14.err) && rm CompileTest14.err) || echo Compiled with errors
