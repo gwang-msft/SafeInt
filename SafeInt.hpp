@@ -673,6 +673,8 @@ namespace utilities
     inline void SafeIntExceptionAssert() SAFEINT_NOTHROW {}
 #endif
 
+#if !defined SafeIntDefaultExceptionHandler
+
 // Note - removed weak annotation on class due to gcc complaints
 // This was the only place in the file that used it, need to better understand 
 // whether it was put there correctly in the first place
@@ -770,7 +772,6 @@ typedef SafeIntInternal::SafeIntWin32ExceptionHandler Win32ExceptionHandler;
 
 // This library will use conditional noexcept soon, but not in this release
 // Some users might mix exception handlers, which is not advised, but is supported
-#if !defined SafeIntDefaultExceptionHandler
     #if defined SAFEINT_RAISE_EXCEPTION
         #if !defined _WINDOWS_
         #error Include windows.h in order to use Win32 exceptions
@@ -785,7 +786,7 @@ typedef SafeIntInternal::SafeIntWin32ExceptionHandler Win32ExceptionHandler;
         #define SAFEINT_EXCEPTION_HANDLER_CPP 1
         #endif
     #endif
-#endif
+#endif // #if !defined SafeIntDefaultExceptionHandler
 
 #if !defined SAFEINT_EXCEPTION_HANDLER_CPP
 #define SAFEINT_EXCEPTION_HANDLER_CPP 0
