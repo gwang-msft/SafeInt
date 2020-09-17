@@ -47,7 +47,7 @@ Please read the leading comments before using the class.
 #define CPLUSPLUS_STD CPLUSPLUS_98
 #elif __cplusplus < 201402L
 #define CPLUSPLUS_STD CPLUSPLUS_11
-#else 
+#else
 #define CPLUSPLUS_STD CPLUSPLUS_14
 #endif
 
@@ -65,7 +65,7 @@ Please read the leading comments before using the class.
 // and this version always supports at least the CPLUSPLUS_14 approach
 #define CPLUSPLUS_STD CPLUSPLUS_14
 
-#endif 
+#endif
 
 #else
 // Unknown compiler, assume C++ 98
@@ -89,7 +89,7 @@ Please read the leading comments before using the class.
 // This won't be set otherwise, but the headers won't compile, either
 #if __cpp_constexpr >= 201304L
 #define CONSTEXPR_SUPPORT CONSTEXPR_CPP14 // Clang, gcc, Visual Studio 2017 or later
-#elif __cpp_constexpr >= 200704L 
+#elif __cpp_constexpr >= 200704L
 #define CONSTEXPR_SUPPORT CONSTEXPR_CPP11 // Clang, gcc with -std=c++11, Visual Studio 2015
 #else
 #define CONSTEXPR_SUPPORT CONSTEXPR_NONE
@@ -174,7 +174,7 @@ Please read the leading comments before using the class.
 #if SAFEINT_COMPILER == VISUAL_STUDIO_COMPILER && defined _M_AMD64 && !defined SAFEINT_USE_INTRINSICS
     #include <intrin.h>
     #define SAFEINT_USE_INTRINSICS 1
-    #define _CONSTEXPR14_MULTIPLY 
+    #define _CONSTEXPR14_MULTIPLY
 #else
     #define SAFEINT_USE_INTRINSICS 0
     #define _CONSTEXPR14_MULTIPLY _CONSTEXPR14
@@ -192,7 +192,7 @@ Please read the leading comments before using the class.
 #endif
 
 #if !defined _CRT_SECURE_INVALID_PARAMETER
-// Calling fail fast is somewhat more robust than calling abort, 
+// Calling fail fast is somewhat more robust than calling abort,
 // but abort is the closest we can manage without Visual Studio support
 // Need the header for abort()
 #include <stdlib.h>
@@ -566,7 +566,7 @@ SIZE_T_CAST_NEEDED                 - some compilers complain if there is not a c
 *
 */
 
-// Warning - this very old work-around will be deprecated in future releases. 
+// Warning - this very old work-around will be deprecated in future releases.
 #if defined VISUAL_STUDIO_SAFEINT_COMPAT
 namespace msl
 {
@@ -673,10 +673,8 @@ namespace utilities
     inline void SafeIntExceptionAssert() SAFEINT_NOTHROW {}
 #endif
 
-#if !defined SafeIntDefaultExceptionHandler
-
 // Note - removed weak annotation on class due to gcc complaints
-// This was the only place in the file that used it, need to better understand 
+// This was the only place in the file that used it, need to better understand
 // whether it was put there correctly in the first place
 
 class SAFEINT_VISIBLE SafeIntException
@@ -693,9 +691,16 @@ namespace SafeIntInternal
     // Visual Studio version of SafeInt provides for two possible error
     // handlers:
     // SafeIntErrorPolicy_SafeIntException - C++ exception, default if not otherwise defined
-    // SafeIntErrorPolicy_InvalidParameter - Calls fail fast (Windows-specific), bypasses any exception handlers, 
+    // SafeIntErrorPolicy_InvalidParameter - Calls fail fast (Windows-specific), bypasses any exception handlers,
     //                                       exits the app with a crash
     template < typename E > class SafeIntExceptionHandler;
+
+#if __cpp_exceptions >= 199711L
+
+    // Some users may have applications that do not use C++ exceptions
+    // and cannot compile the following class. If that is the case,
+    // either SafeInt_InvalidParameter must be defined as the default,
+    // or a custom, user-supplied exception handler must be provided.
 
     template <> class SafeIntExceptionHandler < SafeIntException >
     {
@@ -704,15 +709,17 @@ namespace SafeIntInternal
         static SAFEINT_NORETURN void SAFEINT_STDCALL SafeIntOnOverflow()
         {
             SafeIntExceptionAssert();
-            throw SafeIntException(SafeIntError::SafeIntArithmeticOverflow );
+            throw SafeIntException( SafeIntError::SafeIntArithmeticOverflow );
         }
 
         static SAFEINT_NORETURN void SAFEINT_STDCALL SafeIntOnDivZero()
         {
             SafeIntExceptionAssert();
-            throw SafeIntException(SafeIntError::SafeIntDivideByZero );
+            throw SafeIntException( SafeIntError::SafeIntDivideByZero );
         }
     };
+
+#endif
 
    class SafeInt_InvalidParameter
    {
@@ -730,9 +737,9 @@ namespace SafeIntInternal
        }
    };
 
-#if defined _WINDOWS_ 
+#if defined _WINDOWS_
 
-    class SafeIntWin32ExceptionHandler 
+    class SafeIntWin32ExceptionHandler
     {
     public:
         static SAFEINT_NORETURN void SAFEINT_STDCALL SafeIntOnOverflow() SAFEINT_NOTHROW
@@ -753,16 +760,19 @@ namespace SafeIntInternal
 } // namespace SafeIntInternal
 
 // both of these have cross-platform support
+#if __cpp_exceptions >= 199711L
 typedef SafeIntInternal::SafeIntExceptionHandler < SafeIntException > CPlusPlusExceptionHandler;
+#endif
+
 typedef SafeIntInternal::SafeInt_InvalidParameter InvalidParameterExceptionHandler;
 
 // This exception handler is no longer recommended, but is left here in order not to break existing users
-#if defined _WINDOWS_ 
+#if defined _WINDOWS_
 typedef SafeIntInternal::SafeIntWin32ExceptionHandler Win32ExceptionHandler;
 #endif
 
 // For Visual Studio compatibility
-#if defined VISUAL_STUDIO_SAFEINT_COMPAT 
+#if defined VISUAL_STUDIO_SAFEINT_COMPAT
     typedef CPlusPlusExceptionHandler  SafeIntErrorPolicy_SafeIntException;
     typedef InvalidParameterExceptionHandler SafeIntErrorPolicy_InvalidParameter;
 #endif
@@ -772,6 +782,7 @@ typedef SafeIntInternal::SafeIntWin32ExceptionHandler Win32ExceptionHandler;
 
 // This library will use conditional noexcept soon, but not in this release
 // Some users might mix exception handlers, which is not advised, but is supported
+#if !defined SafeIntDefaultExceptionHandler
     #if defined SAFEINT_RAISE_EXCEPTION
         #if !defined _WINDOWS_
         #error Include windows.h in order to use Win32 exceptions
@@ -781,18 +792,23 @@ typedef SafeIntInternal::SafeIntWin32ExceptionHandler Win32ExceptionHandler;
     #elif defined SAFEINT_FAILFAST
         #define SafeIntDefaultExceptionHandler InvalidParameterExceptionHandler
     #else
-        #define SafeIntDefaultExceptionHandler CPlusPlusExceptionHandler
+        #if __cpp_exceptions >= 199711L
+            #define SafeIntDefaultExceptionHandler CPlusPlusExceptionHandler
+        #else
+            #define SafeIntDefaultExceptionHandler InvalidParameterExceptionHandler
+        #endif
+
         #if !defined SAFEINT_EXCEPTION_HANDLER_CPP
         #define SAFEINT_EXCEPTION_HANDLER_CPP 1
         #endif
     #endif
-#endif // #if !defined SafeIntDefaultExceptionHandler
+#endif
 
 #if !defined SAFEINT_EXCEPTION_HANDLER_CPP
 #define SAFEINT_EXCEPTION_HANDLER_CPP 0
 #endif
 
-// If an error handler is chosen other than C++ exceptions, such as Win32 exceptions, fail fast, 
+// If an error handler is chosen other than C++ exceptions, such as Win32 exceptions, fail fast,
 // or abort, then all methods become no throw. Some teams track throw() annotations closely,
 // and the following option provides for this.
 #if SAFEINT_EXCEPTION_HANDLER_CPP
@@ -813,7 +829,7 @@ namespace safeint_internal
     public:
         enum
         {
-            isBool = false, // We specialized out a bool  
+            isBool = false, // We specialized out a bool
             // If it is an enum, then consider it an int type
             // This does allow someone to make a SafeInt from an enum type, which is not recommended,
             // but it also allows someone to add an enum value to a SafeInt, which is handy.
@@ -6052,14 +6068,14 @@ public:
         return *this;
     }
 
-    template < typename U > 
+    template < typename U >
     _CONSTEXPR14 SafeInt< T, E >& operator /=( U i ) SAFEINT_CPP_THROW
     {
         DivisionHelper< T, U, DivisionMethod< T, U >::method >::template DivideThrow< E >( m_int, i, m_int );
         return *this;
     }
 
-    template < typename U > 
+    template < typename U >
     _CONSTEXPR14 SafeInt< T, E >& operator /=( SafeInt< U, E > i )
     {
         DivisionHelper< T, U, DivisionMethod< T, U >::method >::template DivideThrow< E >( m_int, (U)i, m_int );
@@ -6860,7 +6876,7 @@ public:
 };
 
 // Division
-template < typename T, typename U, typename E > 
+template < typename T, typename U, typename E >
 _CONSTEXPR14 SafeInt< T, E > operator /( U lhs, SafeInt< T, E > rhs ) SAFEINT_CPP_THROW
 {
     // Corner case - has to be handled seperately
